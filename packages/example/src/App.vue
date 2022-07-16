@@ -32,6 +32,7 @@
         :highlight="highlight"
         :line-numbers="lineNumbers"
         :readonly="readonly"
+        :word-wrap="wordWrap"
       ></Editor>
     </main>
   </div>
@@ -55,6 +56,7 @@ export default {
   },
   data: () => ({
     lineNumbers: true,
+    wordWrap: true,
     readonly: false,
     /* eslint-disable */
     code: require('./example.js').default /* eslint-enable */,
@@ -64,9 +66,9 @@ export default {
       return highlight(
         code,
         {
-          ...languages['markup'],
+          // ...languages['markup'],
           ...languages['js'],
-          ...languages['css'],
+          // ...languages['css'],
         },
         'markup'
       );

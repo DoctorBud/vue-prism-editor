@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable */
+
 import { defineComponent, h } from 'vue';
 
 import './styles.css';
@@ -30,6 +32,7 @@ export interface EditorProps {
   insertSpaces: boolean;
   ignoreTabKey: boolean;
   placeholder: string;
+  wordWrap: boolean;
 }
 export interface Record {
   value: string;
@@ -80,6 +83,10 @@ export const PrismEditor = defineComponent({
       type: String,
       default: '',
     },
+    wordWrap: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -111,6 +118,13 @@ export const PrismEditor = defineComponent({
             this.setLineNumbersHeight();
           });
         }
+        this.$nextTick(() => {
+          if (!this.wordWrap) {
+            this.updateTextareaDimensions();
+          } else {
+            this.updateLineNumbersMarginTop();
+          }
+        })
       },
     },
     lineNumbers(): void {
@@ -118,6 +132,28 @@ export const PrismEditor = defineComponent({
         this.styleLineNumbers();
         this.setLineNumbersHeight();
       });
+    },
+    wordWrap(bool: boolean): void {
+      if (bool) {
+        const textarea = document.querySelector('.prism-editor__textarea') as HTMLTextAreaElement;
+
+        if (textarea) {
+          textarea.style.width = '100%';
+          textarea.style.height = '100%';
+        }
+
+        this.$nextTick(() => {
+          this.updateLineNumbersMarginTop();
+        });
+      } else {
+        const allLineNumbers = document.querySelectorAll('.prism-editor__line-number') as NodeListOf<HTMLDivElement>;
+
+        if (allLineNumbers) {
+          allLineNumbers.forEach((e) => {
+            e.style.marginTop = '0';
+          });
+        }
+      }
     },
   },
   computed: {
@@ -137,6 +173,11 @@ export const PrismEditor = defineComponent({
   mounted() {
     this._recordCurrentState();
     this.styleLineNumbers();
+    if (!this.wordWrap) {
+      this.updateTextareaDimensions();
+    } else {
+      this.updateLineNumbersMarginTop();
+    }
   },
 
   methods: {
@@ -510,6 +551,104 @@ export const PrismEditor = defineComponent({
         this.capture = !this.capture;
       }
     },
+
+    updateTextareaDimensions(): void {
+      const textarea = document.querySelector('.prism-editor__textarea') as HTMLTextAreaElement;
+      const pre = document.querySelector('.prism-editor__editor') as HTMLPreElement;
+
+      if (textarea && pre) {
+        const { width, height } = pre.getBoundingClientRect();
+
+        textarea.style.width = `${width}px`;
+        textarea.style.height = `${height}px`;
+      }
+    },
+
+    getLinesToNextLineBreak (line: number): number {
+      let index = line - 1
+      const range = document.createRange()
+
+      const editor = document.querySelector('.prism-editor__editor')
+
+      if (!editor) return 0
+
+      range.setStart(editor.childNodes[0], 0)
+
+      const children = Array.from(editor.childNodes).slice(0, -1)
+      console.log('children', children);
+      let counter = 0
+      let position;
+
+      for (const child of children) {
+        if (child.nodeName == '#text' && child.nodeValue) {
+          const rowBreakIndexes = this.getIndexes('\n', child.nodeValue)
+          console.log('rowBreakIndexes', rowBreakIndexes);
+
+          counter += rowBreakIndexes.length
+
+          if (counter >= index) {
+            position = rowBreakIndexes[index - 1]
+            range.setEnd(child, position)
+            break
+          }
+        }
+      }
+
+      const clientRects = range.getClientRects()
+      console.log('clientRects', clientRects);
+      const lastTop = clientRects[clientRects.length - 1].top;
+      const heditor = editor as HTMLElement;
+      const editorTop = heditor.offsetTop;
+      const hcontainer = document.querySelector('.prism-editor__container') as HTMLElement
+      console.log('heditor', heditor, editorTop, lastTop, hcontainer, hcontainer.offsetTop);
+      return Math.ceil((lastTop - hcontainer.offsetTop) / 21)
+    },
+
+    updateLineNumbersMarginTop () {
+      const lineNumbers = document.querySelectorAll('.prism-editor__line-number')
+
+      if (lineNumbers && lineNumbers.length > 1) {
+        const lineNumbersArr = Array.from(lineNumbers) as HTMLDivElement[]
+
+        lineNumbersArr.forEach((element, index, arr) => {
+          const line = index + 1
+          const location = this.getLinesToNextLineBreak(line)
+          console.log(`LINE: ${line} LINES TO NEXT LINE BREAK: ${location}`)
+
+          if (line !== 1) {
+            const beforeElementsMarginTopSum = arr.slice(0, index)
+              .reduce((a, c) => a + parseInt(window.getComputedStyle(c).marginTop, 10), 0)
+
+            const finalMarginTop = location * 21 - index * 21 - beforeElementsMarginTopSum
+
+            if (finalMarginTop > 0) {
+              element.style.marginTop = `${finalMarginTop}px`
+            } else {
+              element.style.marginTop = `0px`
+            }
+
+            console.log(`LINE ${line} MARGIN TOP: ${finalMarginTop}px`)
+          }
+        })
+      }
+    },
+
+    getIndexes(searchStr: string, str: string, caseSensitive?: boolean): number[] {
+      const searchStrLen = searchStr.length;
+      if (searchStrLen == 0) {
+          return [];
+      }
+      let startIndex = 0, index, indexes = [];
+      if (!caseSensitive) {
+          str = str.toLowerCase();
+          searchStr = searchStr.toLowerCase();
+      }
+      while ((index = str.indexOf(searchStr, startIndex)) > -1) {
+          indexes.push(index);
+          startIndex = index + searchStrLen;
+      }
+      return indexes;
+    }
   },
   render() {
     const lineNumberWidthCalculator = h(
@@ -553,10 +692,11 @@ export const PrismEditor = defineComponent({
       onBlur: ($event: FocusEvent) => {
         this.$emit('blur', $event);
       },
-      class: {
-        'prism-editor__textarea': true,
-        'prism-editor__textarea--empty': this.isEmpty,
-      },
+      class: [
+        'prism-editor__textarea',
+        {'prism-editor__textarea--empty': this.isEmpty},
+        {'prism-editor__texarea--word-wrap': this.wordWrap},
+      ],
       spellCheck: 'false',
       autocapitalize: 'off',
       autocomplete: 'off',
@@ -569,11 +709,23 @@ export const PrismEditor = defineComponent({
     });
     const preview = h('pre', {
       ref: 'pre',
-      class: 'prism-editor__editor',
+      class: [
+        'prism-editor__editor',
+        {
+          'prism-editor__editor--word-wrap': this.wordWrap,
+        }
+      ],
       'data-testid': 'preview',
       innerHTML: this.content,
     });
-    const editorContainer = h('div', { class: 'prism-editor__container' }, [textarea, preview]);
+    console.log('preview', preview);
+    const editorContainer = h('div', {
+      class: [
+        'prism-editor__container',
+        { 'prism-editor__container--word-wrap': this.wordWrap },
+      ],
+    }, [textarea, preview]);
+    console.log('editorContainer', editorContainer);
     return h('div', { class: 'prism-editor-wrapper' }, [this.lineNumbers && lineNumbers, editorContainer]);
   },
 });
