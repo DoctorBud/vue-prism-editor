@@ -564,62 +564,202 @@ export const PrismEditor = defineComponent({
       }
     },
 
-    getLinesToNextLineBreak (line: number): number {
-      let index = line - 1
-      const range = document.createRange()
+    // getLinesToNextLineBreak (line: number): number {
+    //   let index = line - 1
+    //   const range = document.createRange()
 
-      const editor = document.querySelector('.prism-editor__editor')
+    //   const editor = document.querySelector('.prism-editor__editor')
 
-      if (!editor) return 0
+    //   if (!editor) return 0
 
-      range.setStart(editor.childNodes[0], 0)
+    //   range.setStart(editor.childNodes[0], 0)
+
+    //   const children = Array.from(editor.childNodes).slice(0, -1)
+    //   let counter = 0
+    //   let position;
+
+    //   for (const child of children) {
+    //     if (child.nodeName == '#text' && child.nodeValue) {
+    //       const rowBreakIndexes = this.getIndexes('\n', child.nodeValue)
+    //       // console.log('rowBreakIndexes', rowBreakIndexes);
+
+    //       counter += rowBreakIndexes.length
+
+    //       if (counter >= index) {
+    //         position = rowBreakIndexes[index - 1]
+    //         range.setEnd(child, position)
+    //         break
+    //       }
+    //     }
+    //   }
+
+    //   const clientRects = range.getClientRects()
+    //   if (clientRects.length > 0) {
+    //     const lastTop = clientRects[clientRects.length - 1].top;
+    //     // const heditor = editor as HTMLElement;
+    //     // const editorTop = heditor.offsetTop;
+    //     const hcontainer = document.querySelector('.prism-editor__container') as HTMLElement
+    //     const containerTop = hcontainer.offsetTop;
+    //     // console.log('heditor', clientRects, lastTop, heditor, editorTop, hcontainer, containerTop);
+    //     return Math.ceil((lastTop - containerTop) / 21)
+    //   }
+    //   else {
+    //     console.log('Empty clientRects', children, range);
+    //     return 1;
+    //   }
+    // },
+
+    getRowsPerLine(): number[] {
+      // const result = [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1];
+      // const result = [3];
+      // const result = [3, 1];
+      // const result = [1, 1, 1, 3, 1, 1, 1, 1, 1, 1];
+
+      const editor = document.querySelector('.prism-editor__editor') as HTMLElement
+      const result: number[] = [];
+      if (!editor) return result;
+
+      const lineHeight = parseInt(window.getComputedStyle(editor).lineHeight, 10);
 
       const children = Array.from(editor.childNodes).slice(0, -1)
-      console.log('children', children);
-      let counter = 0
-      let position;
+
+      const hcontainer = document.querySelector('.prism-editor__container') as HTMLElement
+      const containerTop = hcontainer.offsetTop;
+      const containerLeft = hcontainer.offsetLeft;
+      // console.log('editor', lineHeight, editor, editor.offsetTop, containerTop);
+      let lastTop = containerTop;
+      console.log('children', children, containerTop, containerLeft);
 
       for (const child of children) {
-        if (child.nodeName == '#text' && child.nodeValue) {
-          const rowBreakIndexes = this.getIndexes('\n', child.nodeValue)
-          console.log('rowBreakIndexes', rowBreakIndexes);
+        // if (child.nodeName == '#text' && child.nodeValue) {
+          // if (child.nodeValue.replaceAll('\n', '').length === 0) {
+          //   result.push(child.nodeValue.length);
+          // }
+          // range.selectNode(child);
+          // // const thisRect = range.getBoundingClientRect();
+          // const thisRects = range.getClientRects();
+          // for (let i = 0; i < thisRects.length; ++i) {
+          //   const rect = thisRects[i];
+          //   const thisTop = rect.top - containerTop;
+          //   if (thisTop > lastTop) {
+          //     const lines = Math.ceil(rect.height / lineHeight);
+          //     console.log('rect1', i, thisRects, thisTop, lines);
+          //     result.push(lines);
+          //     lastTop = thisTop;
+          //   }
 
-          counter += rowBreakIndexes.length
+        // if (child.nodeName == '#text' && child.nodeValue) {
+        //   range.selectNode(child);
+        //   // const thisRect = range.getBoundingClientRect();
+        //   const thisRects = range.getClientRects();
+        //   for (let i = 0; i < thisRects.length; ++i) {
+        //     const rect = thisRects[i];
+        //     const thisTop = rect.top - containerTop;
+        //     if (thisTop > lastTop) {
+        //       const lines = Math.ceil(rect.height / lineHeight);
+        //       console.log('rect1', i, thisRects, thisTop, lines);
+        //       result.push(lines);
+        //       lastTop = thisTop;
+        //     }
+        //   }
+        // } else if (child.nodeType === 1) {
+        if (child.nodeType === 1) {
+          const hchild = child as HTMLElement;
+          // const thisTop = hchild.offsetTop;
+          // console.log('rect2', hchild.offsetTop, thisTop, hchild.offsetHeight, hchild)
 
-          if (counter >= index) {
-            position = rowBreakIndexes[index - 1]
-            range.setEnd(child, position)
-            break
+          // if (thisTop > lastTop) {
+          //   result.push(Math.ceil(hchild.offsetHeight / lineHeight));
+          //   lastTop = thisTop;
+          // }
+          const thisRect = hchild.getBoundingClientRect();
+          const thisTop = thisRect.top;
+          const lines = Math.ceil(thisRect.height / lineHeight);
+          console.log('#element', thisTop, lastTop, lines, hchild);
+          if (thisTop === lastTop) {
+            result[result.length - 1] = Math.max(result[result.length - 1], lines);
+            console.log('...amend', result, lines, thisTop);
+          } else if (lastTop === containerTop || thisTop > lastTop) {
+            result.push(lines);
+            console.log('...#elementlines', result, lines, thisTop, lastTop);
+            lastTop = thisTop;
           }
+        } else if (child.nodeName === '#text' && child.nodeValue !== null) {
+          // const lines = child.nodeValue.split('\n').slice(1);
+          const range = document.createRange()
+          range.selectNode(child);
+          // const thisRect = range.getBoundingClientRect();
+          const thisRects = range.getClientRects();
+          // const thisTop = thisRect.top;
+          // console.log('#text', thisRects, result.length, lines.length, thisTop, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
+
+          for (let i = 0; i < thisRects.length; ++i) {
+            const thisRect = thisRects[i];
+            if (thisRect.left < containerLeft) {
+              lastTop = thisRect.top;
+              result.push(1);
+              console.log('...#textlines', result, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
+            } else {
+              console.log('...#textlines IGNORED', result, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
+            }
+          };
+
+          // if (thisRect.left < containerLeft) {
+          //   lines.forEach(() => {
+          //     lastTop += lineHeight;
+          //     console.log('...#textlines', 1, lastTop);
+          //     result.push(1);
+          //   });
+          // } else {
+          //   console.log('...ignored trailing newlines', thisRects);
+          // }
+
+          // if (thisRect.left < containerLeft) {
+          //   lines.forEach(() => {
+          //     lastTop += lineHeight;
+          //     console.log('...#textlines', 1, lastTop);
+          //     result.push(1);
+          //   });
+          // } else {
+          //   console.log('...ignored trailing newlines', thisRects);
+          // }
+          // const lines = Math.ceil(thisRect.height / lineHeight);
+          // console.log('text', lines, thisRect.height);
+          // result.push(lines);
+        } else {
+          console.log('unknown child type', child.nodeType, child.nodeValue, child.nodeName,
+              child.nodeName === '#text');
         }
       }
 
-      const clientRects = range.getClientRects()
-      console.log('clientRects', clientRects);
-      const lastTop = clientRects[clientRects.length - 1].top;
-      const heditor = editor as HTMLElement;
-      const editorTop = heditor.offsetTop;
-      const hcontainer = document.querySelector('.prism-editor__container') as HTMLElement
-      console.log('heditor', heditor, editorTop, lastTop, hcontainer, hcontainer.offsetTop);
-      return Math.ceil((lastTop - hcontainer.offsetTop) / 21)
+      console.log('getRowsPerLine', result);
+      return result;
     },
 
     updateLineNumbersMarginTop () {
+      const rowsPerLine = this.getRowsPerLine();
       const lineNumbers = document.querySelectorAll('.prism-editor__line-number')
+      const lineHeight = parseInt(window.getComputedStyle(lineNumbers[0]).lineHeight, 10);
 
       if (lineNumbers && lineNumbers.length > 1) {
         const lineNumbersArr = Array.from(lineNumbers) as HTMLDivElement[]
 
-        lineNumbersArr.forEach((element, index, arr) => {
-          const line = index + 1
-          const location = this.getLinesToNextLineBreak(line)
-          console.log(`LINE: ${line} LINES TO NEXT LINE BREAK: ${location}`)
+        let excessLines = 0;
+        lineNumbersArr.forEach((element, index) => {
+          if (index > 0) {
+            const rows = rowsPerLine[index - 1];
+            console.log(`LINE: ${index + 1} ROWS BEFORE: ${rows}`)
+            if (rows > 1) {
+              excessLines += 1;
+            }
+            else {
+              excessLines = 0;
+            }
+            // const beforeElementsMarginTopSum = arr.slice(0, index - 1)
+            //   .reduce((a, c) => a + parseInt(window.getComputedStyle(c).marginTop, 10), 0)
 
-          if (line !== 1) {
-            const beforeElementsMarginTopSum = arr.slice(0, index)
-              .reduce((a, c) => a + parseInt(window.getComputedStyle(c).marginTop, 10), 0)
-
-            const finalMarginTop = location * 21 - index * 21 - beforeElementsMarginTopSum
+            const finalMarginTop = (rows - 1) * lineHeight;
+            console.log('finalMarginTop', index, rows, finalMarginTop, excessLines);
 
             if (finalMarginTop > 0) {
               element.style.marginTop = `${finalMarginTop}px`
@@ -627,7 +767,7 @@ export const PrismEditor = defineComponent({
               element.style.marginTop = `0px`
             }
 
-            console.log(`LINE ${line} MARGIN TOP: ${finalMarginTop}px`)
+            // console.log(`LINE ${line} MARGIN TOP: ${finalMarginTop}px`)
           }
         })
       }
@@ -651,6 +791,10 @@ export const PrismEditor = defineComponent({
     }
   },
   render() {
+    // this.$nextTick(() => {
+    //   this.getClientRects();
+    // });
+
     const lineNumberWidthCalculator = h(
       'div',
       {
@@ -718,14 +862,14 @@ export const PrismEditor = defineComponent({
       'data-testid': 'preview',
       innerHTML: this.content,
     });
-    console.log('preview', preview);
+    // console.log('preview222', preview);
     const editorContainer = h('div', {
       class: [
         'prism-editor__container',
         { 'prism-editor__container--word-wrap': this.wordWrap },
       ],
     }, [textarea, preview]);
-    console.log('editorContainer', editorContainer);
+    // console.log('editorContainer', editorContainer);
     return h('div', { class: 'prism-editor-wrapper' }, [this.lineNumbers && lineNumbers, editorContainer]);
   },
 });

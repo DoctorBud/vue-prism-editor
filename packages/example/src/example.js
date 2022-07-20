@@ -1,5 +1,6 @@
 // eslint-ignore
-export default `// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is he Famous Mr. Ed
+
+export default `// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
 
 <template>
   <div id="app">
@@ -13,18 +14,59 @@ export default {
     message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
   })
 }
+
+// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+
 </script>
 <style>
 #app {
   color: #2ecc71
 }
-</style>`;
+</style>
 
-// export default `<script>
+
+`;
+
+// export default `// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed`;
+
+// export default `// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+// blah`;
+
+// export default `// A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+
+
+
+
+// <script>
 // export default {
 //   data:() => ({
-//     message: 'Hello Vue!'
+//     message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
 //   })
 // }
-// </script>
+// </script>`;
+
+// export default `
+
+
+
+
+
+
+// // A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+// // A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+// // A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+// // A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+// // A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed A horse is a horse, of course, of course, but no one can talk to a horse, of course, unless, of course, the name of the horse is the Famous Mr. Ed
+
+
+
+
+// `;
+
+// export default `{
+//   message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
+//   message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
+//   message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
+//   message: 'Hello Vue! This is a really, really, really, really, really, really, really long paragraph to exercise wordWrap.'
+// }
 // `;

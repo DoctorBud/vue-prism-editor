@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="min-h-screen">
-    <header class="header">
+    <header class="header" style="display: none;">
       <div class="hero py-8 sm:pt-24 text-center">
         <div class="hero-text font-mono text-xl w-64 sm:w-full mx-auto">
           <h1 class="text-2xl">Vue Prism Code Editor</h1>
@@ -83,7 +83,7 @@ export default {
 }
 .my-editor {
   background-color: #fafafa;
-  max-height: 400px;
+  max-height: 90vh;
   font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
   font-size: 14px;
   line-height: 1.5;
