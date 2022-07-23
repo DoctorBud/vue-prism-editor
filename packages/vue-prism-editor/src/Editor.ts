@@ -610,11 +610,6 @@ export const PrismEditor = defineComponent({
     // },
 
     getRowsPerLine(): number[] {
-      // const result = [3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1];
-      // const result = [3];
-      // const result = [3, 1];
-      // const result = [1, 1, 1, 3, 1, 1, 1, 1, 1, 1];
-
       const editor = document.querySelector('.prism-editor__editor') as HTMLElement
       const result: number[] = [];
       if (!editor) return result;
@@ -631,38 +626,6 @@ export const PrismEditor = defineComponent({
       console.log('children', children, containerTop, containerLeft);
 
       for (const child of children) {
-        // if (child.nodeName == '#text' && child.nodeValue) {
-          // if (child.nodeValue.replaceAll('\n', '').length === 0) {
-          //   result.push(child.nodeValue.length);
-          // }
-          // range.selectNode(child);
-          // // const thisRect = range.getBoundingClientRect();
-          // const thisRects = range.getClientRects();
-          // for (let i = 0; i < thisRects.length; ++i) {
-          //   const rect = thisRects[i];
-          //   const thisTop = rect.top - containerTop;
-          //   if (thisTop > lastTop) {
-          //     const lines = Math.ceil(rect.height / lineHeight);
-          //     console.log('rect1', i, thisRects, thisTop, lines);
-          //     result.push(lines);
-          //     lastTop = thisTop;
-          //   }
-
-        // if (child.nodeName == '#text' && child.nodeValue) {
-        //   range.selectNode(child);
-        //   // const thisRect = range.getBoundingClientRect();
-        //   const thisRects = range.getClientRects();
-        //   for (let i = 0; i < thisRects.length; ++i) {
-        //     const rect = thisRects[i];
-        //     const thisTop = rect.top - containerTop;
-        //     if (thisTop > lastTop) {
-        //       const lines = Math.ceil(rect.height / lineHeight);
-        //       console.log('rect1', i, thisRects, thisTop, lines);
-        //       result.push(lines);
-        //       lastTop = thisTop;
-        //     }
-        //   }
-        // } else if (child.nodeType === 1) {
         if (child.nodeType === 1) {
           const hchild = child as HTMLElement;
           // const thisTop = hchild.offsetTop;
@@ -678,10 +641,11 @@ export const PrismEditor = defineComponent({
           console.log('#element', thisTop, lastTop, lines, hchild);
           if (thisTop === lastTop) {
             result[result.length - 1] = Math.max(result[result.length - 1], lines);
-            console.log('...amend', result, lines, thisTop);
+            lastTop = thisTop + (lines - 1) * lineHeight;
+            console.log('...#element amend', result[result.length - 1], result.length, lines, thisTop, lastTop);
           } else if (lastTop === containerTop || thisTop > lastTop) {
             result.push(lines);
-            console.log('...#elementlines', result, lines, thisTop, lastTop);
+            console.log('...#element new', result[result.length - 1], result.length, lines, thisTop, lastTop);
             lastTop = thisTop;
           }
         } else if (child.nodeName === '#text' && child.nodeValue !== null) {
@@ -691,41 +655,40 @@ export const PrismEditor = defineComponent({
           // const thisRect = range.getBoundingClientRect();
           const thisRects = range.getClientRects();
           // const thisTop = thisRect.top;
-          // console.log('#text', thisRects, result.length, lines.length, thisTop, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
+          console.log('#text', thisRects, result.length, lastTop, JSON.stringify(child.nodeValue));
 
+          let amend = false;
           for (let i = 0; i < thisRects.length; ++i) {
             const thisRect = thisRects[i];
-            if (thisRect.left < containerLeft) {
-              lastTop = thisRect.top;
-              result.push(1);
-              console.log('...#textlines', result, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
-            } else {
-              console.log('...#textlines IGNORED', result, lastTop, thisRect.left, JSON.stringify(child.nodeValue));
+            if (thisRect.width === 0) {
+              if (thisRect.top === lastTop) {
+                amend = false;
+                console.log('...#text ignore1', amend, i, thisRect, thisRect.left, result.length, result[result.length - 1]);
+              } else {
+                result.push(1);
+                lastTop = thisRect.top;
+                amend = false;
+                console.log('...#text add empty', amend, i, thisRect, thisRect.left, result.length, result[result.length - 1]);
+              }
             }
-          };
-
-          // if (thisRect.left < containerLeft) {
-          //   lines.forEach(() => {
-          //     lastTop += lineHeight;
-          //     console.log('...#textlines', 1, lastTop);
-          //     result.push(1);
-          //   });
-          // } else {
-          //   console.log('...ignored trailing newlines', thisRects);
-          // }
-
-          // if (thisRect.left < containerLeft) {
-          //   lines.forEach(() => {
-          //     lastTop += lineHeight;
-          //     console.log('...#textlines', 1, lastTop);
-          //     result.push(1);
-          //   });
-          // } else {
-          //   console.log('...ignored trailing newlines', thisRects);
-          // }
-          // const lines = Math.ceil(thisRect.height / lineHeight);
-          // console.log('text', lines, thisRect.height);
-          // result.push(lines);
+            else {
+              if (thisRect.top === lastTop) {
+                console.log('...#text ignore2', i, thisRect, result.length, result[result.length - 1]);
+                amend = true;
+              } else {
+                if (amend) {
+                  result[result.length - 1] += 1;
+                  lastTop = thisRect.top;
+                  console.log('...#text amend', i, thisRect, result.length, result[result.length - 1]);
+                } else {
+                  result.push(1);
+                  console.log('...#text add new', i, thisRect, result.length, result[result.length - 1]);
+                  lastTop = thisRect.top;
+                  amend = true;
+                }
+              }
+            }
+          }
         } else {
           console.log('unknown child type', child.nodeType, child.nodeValue, child.nodeName,
               child.nodeName === '#text');

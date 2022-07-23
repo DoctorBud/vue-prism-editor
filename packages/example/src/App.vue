@@ -1,5 +1,8 @@
 <template>
   <div id="app" class="min-h-screen">
+    <div style="height: 10px;border: 1px solid red;">
+      10px
+    </div>
     <header class="header" style="display: none;">
       <div class="hero py-8 sm:pt-24 text-center">
         <div class="hero-text font-mono text-xl w-64 sm:w-full mx-auto">
@@ -86,7 +89,7 @@ export default {
   max-height: 90vh;
   font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.5em;
   padding: 5px 10px;
 }
 </style>
