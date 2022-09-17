@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+/* eslint-disable */
+
 import { defineComponent, h } from 'vue';
 
 import './styles.css';
@@ -30,6 +32,7 @@ export interface EditorProps {
   insertSpaces: boolean;
   ignoreTabKey: boolean;
   placeholder: string;
+  wordWrap: boolean;
 }
 export interface Record {
   value: string;
@@ -80,6 +83,10 @@ export const PrismEditor = defineComponent({
       type: String,
       default: '',
     },
+    wordWrap: {
+      type: Boolean,
+      default: false,
+    },
   },
   data() {
     return {
@@ -111,6 +118,13 @@ export const PrismEditor = defineComponent({
             this.setLineNumbersHeight();
           });
         }
+        this.$nextTick(() => {
+          if (!this.wordWrap) {
+            this.updateTextareaDimensions();
+          } else {
+            this.updateLineNumbersMarginTop();
+          }
+        })
       },
     },
     lineNumbers(): void {
@@ -118,6 +132,28 @@ export const PrismEditor = defineComponent({
         this.styleLineNumbers();
         this.setLineNumbersHeight();
       });
+    },
+    wordWrap(bool: boolean): void {
+      if (bool) {
+        const textarea = document.querySelector('.prism-editor__textarea') as HTMLTextAreaElement;
+
+        if (textarea) {
+          textarea.style.width = '100%';
+          textarea.style.height = '100%';
+        }
+
+        this.$nextTick(() => {
+          this.updateLineNumbersMarginTop();
+        });
+      } else {
+        const allLineNumbers = document.querySelectorAll('.prism-editor__line-number') as NodeListOf<HTMLDivElement>;
+
+        if (allLineNumbers) {
+          allLineNumbers.forEach((e) => {
+            e.style.marginTop = '0';
+          });
+        }
+      }
     },
   },
   computed: {
@@ -137,6 +173,11 @@ export const PrismEditor = defineComponent({
   mounted() {
     this._recordCurrentState();
     this.styleLineNumbers();
+    if (!this.wordWrap) {
+      this.updateTextareaDimensions();
+    } else {
+      this.updateLineNumbersMarginTop();
+    }
   },
 
   methods: {
@@ -510,8 +551,177 @@ export const PrismEditor = defineComponent({
         this.capture = !this.capture;
       }
     },
+
+    updateTextareaDimensions(): void {
+      const textarea = document.querySelector('.prism-editor__textarea') as HTMLTextAreaElement;
+      const pre = document.querySelector('.prism-editor__editor') as HTMLPreElement;
+
+      if (textarea && pre) {
+        const { width, height } = pre.getBoundingClientRect();
+
+        textarea.style.width = `${width}px`;
+        textarea.style.height = `${height}px`;
+      }
+    },
+
+    getRowsPerLine(): number[] {
+      const editor = document.querySelector('.prism-editor__editor') as HTMLElement
+      const result: number[] = [];
+      if (!editor) return result;
+
+      const lineHeight = parseInt(window.getComputedStyle(editor).lineHeight, 10);
+
+      const children = Array.from(editor.childNodes).slice(0, -1)
+
+      const hcontainer = document.querySelector('.prism-editor__container') as HTMLElement
+      const containerTop = hcontainer.offsetTop;
+      const containerLeft = hcontainer.offsetLeft;
+      let lastTop = containerTop;
+      console.log('children', children, lineHeight, containerTop, containerLeft);
+
+      let amend = false;
+
+      for (const child of children) {
+        if (child.nodeType === 1) {
+          const hchild = child as HTMLElement;
+          const thisRect = hchild.getBoundingClientRect();
+          const thisTop = thisRect.top;
+          const lines = Math.ceil(thisRect.height / lineHeight);
+          const isTemplate = false; // hchild.classList.contains('template-string');
+          const textLines = hchild.innerText.split('\n').length - 1;
+          console.log('hchild', hchild, textLines, thisRect.top, thisRect.height, lines);
+
+          if (isTemplate) {
+            console.log('#element template', thisTop, lastTop, lines);
+
+            for (let i = 0; i < lines; ++i) {
+              if (thisTop === lastTop) {
+                console.log('...#element template ignore', thisTop, lastTop, lines);
+              } else {
+                result.push(1);
+                console.log('#...element template add', thisTop, lastTop, lines);
+                lastTop = thisTop + lineHeight;
+                // amend = false;
+              }
+            }
+          } else {
+            console.log('#element', thisTop, lastTop, lines, hchild);
+            if (thisTop === lastTop) {
+              if (textLines > 0) {
+                for (let i = 0; i < textLines; ++i) {
+                  result.push(1);
+                  lastTop += lineHeight;
+                }
+                console.log('...#element amend1', result[result.length - 1], result.length, lines, thisTop, lastTop);
+              }
+              else {
+                result[result.length - 1] = Math.max(result[result.length - 1], lines);
+                lastTop = thisTop + (lines - 1) * lineHeight;
+                console.log('...#element amend2', result[result.length - 1], result.length, lines, thisTop, lastTop);
+              }
+            } else if (lastTop === containerTop || thisTop > lastTop) {
+              result.push(lines);
+              console.log('...#element new', result[result.length - 1], result.length, lines, thisTop, lastTop);
+              lastTop = thisTop + (lines - 1) * lineHeight;
+            }
+          }
+        } else if (child.nodeName === '#text' && child.nodeValue !== null) {
+          const lines = child.nodeValue.split('\n');
+          const range = document.createRange()
+          range.selectNode(child);
+          const thisRects = range.getClientRects();
+          console.log('#text', thisRects, result.length, lastTop, JSON.stringify(child.nodeValue), lines);
+
+          for (let i = 0; i < thisRects.length; ++i) {
+            const thisRect = thisRects[i];
+            if (thisRect.width === 0) {
+              if (thisRect.top === lastTop) {
+                amend = false;
+                console.log('...#text ignore1', amend, i, thisRect, thisRect.left, result[result.length - 1], result.length);
+              } else {
+                result.push(1);
+                lastTop = thisRect.top;
+                amend = false;
+                console.log('...#text add empty', amend, i, thisRect, thisRect.left, result[result.length - 1], result.length);
+              }
+            }
+            else {
+              if (thisRect.top === lastTop) {
+                console.log('...#text ignore2', i, thisRect, result[result.length - 1], result.length);
+                amend = true;
+              } else {
+                if (amend) {
+                  result[result.length - 1] += 1;
+                  lastTop = thisRect.top;
+                  console.log('...#text amend', i, thisRect, result[result.length - 1], result.length);
+                } else {
+                  result.push(1);
+                  console.log('...#text add new', i, thisRect, result[result.length - 1], result.length);
+                  lastTop = thisRect.top;
+                  amend = true;
+                }
+              }
+            }
+          }
+        } else {
+          console.log('unknown child type', child.nodeType, child.nodeValue, child.nodeName,
+              child.nodeName === '#text');
+        }
+      }
+
+      console.log('getRowsPerLine', result);
+      return result;
+    },
+
+    updateLineNumbersMarginTop () {
+      const rowsPerLine = this.getRowsPerLine();
+      const lineNumbers = document.querySelectorAll('.prism-editor__line-number')
+      const lineHeight = parseInt(window.getComputedStyle(lineNumbers[0]).lineHeight, 10);
+
+      if (lineNumbers && lineNumbers.length > 1) {
+        const lineNumbersArr = Array.from(lineNumbers) as HTMLDivElement[]
+
+        lineNumbersArr.forEach((element, index) => {
+          if (index > 0) {
+            const rows = rowsPerLine[index - 1];
+            // console.log(`LINE: ${index + 1} ROWS BEFORE: ${rows}`)
+
+            const finalMarginTop = (rows - 1) * lineHeight;
+
+            if (finalMarginTop > 0) {
+              element.style.marginTop = `${finalMarginTop}px`
+            } else {
+              element.style.marginTop = `0px`
+            }
+
+            // console.log(`LINE ${line} MARGIN TOP: ${finalMarginTop}px`)
+          }
+        })
+      }
+    },
+
+    getIndexes(searchStr: string, str: string, caseSensitive?: boolean): number[] {
+      const searchStrLen = searchStr.length;
+      if (searchStrLen == 0) {
+          return [];
+      }
+      let startIndex = 0, index, indexes = [];
+      if (!caseSensitive) {
+          str = str.toLowerCase();
+          searchStr = searchStr.toLowerCase();
+      }
+      while ((index = str.indexOf(searchStr, startIndex)) > -1) {
+          indexes.push(index);
+          startIndex = index + searchStrLen;
+      }
+      return indexes;
+    }
   },
   render() {
+    // this.$nextTick(() => {
+    //   this.getClientRects();
+    // });
+
     const lineNumberWidthCalculator = h(
       'div',
       {
@@ -553,10 +763,11 @@ export const PrismEditor = defineComponent({
       onBlur: ($event: FocusEvent) => {
         this.$emit('blur', $event);
       },
-      class: {
-        'prism-editor__textarea': true,
-        'prism-editor__textarea--empty': this.isEmpty,
-      },
+      class: [
+        'prism-editor__textarea',
+        {'prism-editor__textarea--empty': this.isEmpty},
+        {'prism-editor__texarea--word-wrap': this.wordWrap},
+      ],
       spellCheck: 'false',
       autocapitalize: 'off',
       autocomplete: 'off',
@@ -569,11 +780,23 @@ export const PrismEditor = defineComponent({
     });
     const preview = h('pre', {
       ref: 'pre',
-      class: 'prism-editor__editor',
+      class: [
+        'prism-editor__editor',
+        {
+          'prism-editor__editor--word-wrap': this.wordWrap,
+        }
+      ],
       'data-testid': 'preview',
       innerHTML: this.content,
     });
-    const editorContainer = h('div', { class: 'prism-editor__container' }, [textarea, preview]);
+    // console.log('preview222', preview);
+    const editorContainer = h('div', {
+      class: [
+        'prism-editor__container',
+        { 'prism-editor__container--word-wrap': this.wordWrap },
+      ],
+    }, [textarea, preview]);
+    // console.log('editorContainer', editorContainer);
     return h('div', { class: 'prism-editor-wrapper' }, [this.lineNumbers && lineNumbers, editorContainer]);
   },
 });

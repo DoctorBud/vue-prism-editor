@@ -1,6 +1,9 @@
 <template>
   <div id="app" class="min-h-screen">
-    <header class="header">
+    <div style="height: 10px;border: 1px solid red;">
+      10px
+    </div>
+    <header class="header" style="display: none;">
       <div class="hero py-8 sm:pt-24 text-center">
         <div class="hero-text font-mono text-xl w-64 sm:w-full mx-auto">
           <h1 class="text-2xl">Vue Prism Code Editor</h1>
@@ -32,6 +35,7 @@
         :highlight="highlight"
         :line-numbers="lineNumbers"
         :readonly="readonly"
+        :word-wrap="wordWrap"
       ></Editor>
     </main>
   </div>
@@ -48,6 +52,12 @@ import 'prismjs/components/prism-markup';
 import 'prismjs/components/prism-javascript';
 import 'prismjs/components/prism-css';
 
+/* eslint-disable no-unused-vars */
+
+// import hljs from 'highlight.js/lib/common';
+// import markdown from 'highlight.js/lib/languages/markdown';
+// import 'highlight.js/styles/base16/tomorrow-night.css';
+
 export default {
   name: 'App',
   components: {
@@ -55,6 +65,7 @@ export default {
   },
   data: () => ({
     lineNumbers: true,
+    wordWrap: true,
     readonly: false,
     /* eslint-disable */
     code: require('./example.js').default /* eslint-enable */,
@@ -64,9 +75,9 @@ export default {
       return highlight(
         code,
         {
-          ...languages['markup'],
+          // ...languages['markup'],
           ...languages['js'],
-          ...languages['css'],
+          // ...languages['css'],
         },
         'markup'
       );
@@ -81,10 +92,10 @@ export default {
 }
 .my-editor {
   background-color: #fafafa;
-  max-height: 400px;
+  max-height: 90vh;
   font-family: Fira code, Fira Mono, Consolas, Menlo, Courier, monospace;
   font-size: 14px;
-  line-height: 1.5;
+  line-height: 1.5em;
   padding: 5px 10px;
 }
 </style>
